@@ -3,20 +3,22 @@ package main
 import (
 	"fmt"
 
-	. "eth_bridge/code"
+	"eth_bridge/code"
 	"github.com/0chain/gosdk/zcncore"
-	//"github.com/spf13/cobra"
+	// "github.com/spf13/cobra"
 )
 
-func main() {
+func main(){
+	if err := code.MakeConfig(); err != nil {
+		code.ExitWithError(err)
+	}
 
-	MakeConfig()
-
-	statusBar := NewZCNStatus()
+	statusBar := code.NewZCNStatus()
 	txn, err := zcncore.NewTransaction(statusBar, 0)
 	if err != nil {
-		ExitWithError(err)
+		code.ExitWithError(err)
 	}
+
 	statusBar.Begin()
 	err = txn.ExecuteSmartContract(
 		zcncore.FaucetSmartContractAddress,

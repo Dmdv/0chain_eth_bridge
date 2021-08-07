@@ -2,6 +2,7 @@ package code
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -19,17 +20,17 @@ const (
 	configFile = "0chain.yaml"
 )
 
-var cfgFile string
-var walletFile string
-var dir string
-var silent bool
-
-var clientConfig string
-var minSubmit int
-var minCfm int
-var CfmChainLength int
-
-var clientWallet *zcncrypto.Wallet
+var (
+	cfgFile        string
+	walletFile     string
+	dir            string
+	silent         bool
+	clientConfig   string
+	minSubmit      int
+	minCfm         int
+	cfmChainLength int
+	clientWallet   *zcncrypto.Wallet
+)
 
 func init() {
 	cfgFileFlag := flag.String("config", "", "config file (default is 0chain.yaml)")
@@ -45,22 +46,25 @@ func init() {
 	silent = *silentFlag
 }
 
-func MakeConfig() {
+func MakeConfig() error {
 	fmt.Println("Started e2e testing")
-	initConfig()
+	return initConfig()
 }
 
-func initConfig() {
+func initConfig() error {
 	chainConfig := viper.New()
 
 	var configDir string
+
 	if dir != "" {
 		configDir = dir
 	} else {
 		configDir = getConfigDir()
 	}
+
 	chainConfig.AddConfigPath(configDir)
-	if &cfgFile != nil && len(cfgFile) > 0 {
+
+	if len(cfgFile) > 0 {
 		chainConfig.SetConfigFile(configDir + "/" + cfgFile)
 	} else {
 		chainConfig.SetConfigFile(configDir + "/" + configFile)
@@ -75,10 +79,10 @@ func initConfig() {
 	chainID := chainConfig.GetString("server_chain.id")
 	minSubmit = chainConfig.GetInt("server_chain.min_submit")
 	minCfm = chainConfig.GetInt("server_chain.min_confirmation")
-	CfmChainLength = chainConfig.GetInt("server_chain.confirmation_chain_length")
+	cfmChainLength = chainConfig.GetInt("server_chain.confirmation_chain_length")
 
 	var walletFilePath string
-	if &walletFile != nil && len(walletFile) > 0 {
+	if len(walletFile) > 0 {
 		walletFilePath = path.Join(configDir, walletFile)
 	} else {
 		walletFilePath = path.Join(configDir, "wallet.json")
@@ -92,7 +96,7 @@ func initConfig() {
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinSubmit(minSubmit),
 		zcncore.WithMinConfirmation(minCfm),
-		zcncore.WithConfirmationChainLength(CfmChainLength),
+		zcncore.WithConfirmationChainLength(cfmChainLength),
 	)
 	if err != nil {
 		ExitWithError(err.Error())
@@ -126,10 +130,10 @@ func initConfig() {
 		defer func(file *os.File) {
 			_ = file.Close()
 		}(file)
-		_, _ = fmt.Fprintf(file, clientConfig)
+
+		_, _ = fmt.Fprint(file, clientConfig)
 
 		fresh = true
-
 	} else {
 		f, err := os.Open(walletFilePath)
 		if err != nil {
@@ -148,8 +152,10 @@ func initConfig() {
 	if err != nil {
 		ExitWithError("Invalid wallet at path:" + walletFilePath)
 	}
+
 	wg := &sync.WaitGroup{}
 	err = zcncore.SetWalletInfo(clientConfig, false)
+
 	if err == nil {
 		wg.Wait()
 	} else {
@@ -159,15 +165,17 @@ func initConfig() {
 	if fresh {
 		log.Print("Creating related read pool for storage of smart-contract...")
 		if err = createReadPool(); err != nil {
-			log.Fatalf("Failed to create read pool: %v", err)
+			log.Panicf("Failed to create read pool: %v", err)
 		}
 		log.Printf("Read pool created successfully")
 	}
 
 	wg = &sync.WaitGroup{}
 	statusBar := &ZCNStatus{wg: wg}
+
 	wg.Add(1)
 	_ = zcncore.RegisterToMiners(clientWallet, statusBar)
+
 	wg.Wait()
 	if statusBar.success {
 		fmt.Println("Wallet registered at miners: ")
@@ -175,8 +183,10 @@ func initConfig() {
 		fmt.Println("Wallet ClientKey: " + clientWallet.ClientKey)
 	} else {
 		PrintError("Wallet registration failed. " + statusBar.errMsg)
-		os.Exit(1)
+		return errors.New(statusBar.errMsg)
 	}
+
+	return nil
 }
 
 func getConfigDir() string {
