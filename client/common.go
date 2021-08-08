@@ -1,4 +1,4 @@
-package code
+package client
 
 import (
 	"fmt"
@@ -76,10 +76,9 @@ func (zcns *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err str
 	zcns.success = true
 	zcns.errMsg = ""
 	zcns.walletString = wallet
-	return
 }
 
-func (zcns *ZCNStatus) OnInfoAvailable(Op int, status int, config string, err string) {
+func (zcns *ZCNStatus) OnInfoAvailable(_ int, status int, config string, err string) {
 	defer zcns.wg.Done()
 	if status != zcncore.StatusSuccess {
 		zcns.success = false
@@ -94,7 +93,7 @@ func (zcns *ZCNStatus) OnSetupComplete(status int, err string) {
 	defer zcns.wg.Done()
 }
 
-func (zcns *ZCNStatus) OnAuthorizeSendComplete(status int, toClienID string, val int64, desc string, creationDate int64, signature string) {
+func (zcns *ZCNStatus) OnAuthorizeSendComplete(status int, _ string, val int64, desc string, creationDate int64, signature string) {
 	defer zcns.wg.Done()
 	fmt.Println("Status:", status)
 	fmt.Println("Timestamp:", creationDate)

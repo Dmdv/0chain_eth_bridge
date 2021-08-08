@@ -1,4 +1,4 @@
-package code
+package client
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ var (
 	minSubmit      int
 	minCfm         int
 	cfmChainLength int
-	clientWallet   *zcncrypto.Wallet
+	Wallet         *zcncrypto.Wallet
 )
 
 func init() {
@@ -59,17 +59,18 @@ func InitClient() {
 }
 
 func registerWallet() error {
-	wg := &sync.WaitGroup{}
-	statusBar := &ZCNStatus{wg: wg}
-	wg.Add(1)
+	fmt.Println("Started Register wallets...")
 
-	_ = zcncore.RegisterToMiners(clientWallet, statusBar)
-	wg.Wait()
+	statusBar := NewZCNStatus()
+
+	statusBar.Begin()
+	_ = zcncore.RegisterToMiners(Wallet, statusBar)
+	statusBar.Wait()
 
 	if statusBar.success {
 		fmt.Println("Wallet registered at miners: ")
-		fmt.Println("Wallet ClientID: " + clientWallet.ClientID)
-		fmt.Println("Wallet ClientKey: " + clientWallet.ClientKey)
+		fmt.Println("Wallet ClientID: " + Wallet.ClientID)
+		fmt.Println("Wallet ClientKey: " + Wallet.ClientKey)
 	} else {
 		PrintError("Wallet registration failed. " + statusBar.errMsg)
 		return errors.New(statusBar.errMsg)
@@ -91,17 +92,13 @@ func initWallet() {
 
 	wallet := &zcncrypto.Wallet{}
 	err := json.Unmarshal([]byte(clientConfig), wallet)
-	clientWallet = wallet
+	Wallet = wallet
 	if err != nil {
 		ExitWithError("Invalid wallet at path:" + walletFilePath)
 	}
 
-	wg := &sync.WaitGroup{}
 	err = zcncore.SetWalletInfo(clientConfig, false)
-
-	if err == nil {
-		wg.Wait()
-	} else {
+	if err != nil {
 		ExitWithError(err.Error())
 	}
 
@@ -226,7 +223,8 @@ func readChainConfig(chainConfig *viper.Viper) string {
 	if err := chainConfig.ReadInConfig(); err != nil {
 		ExitWithError("Can't read config:", err)
 	}
-	return configDir
+
+	return configDirLocal
 }
 
 func getConfigDir() string {
