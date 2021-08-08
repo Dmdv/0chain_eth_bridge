@@ -17,13 +17,14 @@ import (
 )
 
 const (
-	configFile = "0chain.yaml"
+	configFileName = "0chain.yaml"
 )
 
 var (
-	cfgFile        string
+	configFile     string
+	configDir      string
 	walletFile     string
-	dir            string
+	walletFilePath string
 	silent         bool
 	clientConfig   string
 	minSubmit      int
@@ -35,119 +36,61 @@ var (
 func init() {
 	cfgFileFlag := flag.String("config", "", "config file (default is 0chain.yaml)")
 	walletFileFlag := flag.String("wallet", "", "wallet file (default is wallet.json)")
-	dirFlag := flag.String("configDir", "", "configuration directory (default is $HOME/.zcn)")
+	configDirFlag := flag.String("configDir", "", "configuration directory (default is $HOME/.zcn)")
 	silentFlag := flag.Bool("silent", false, "Do not print sdk logs in stderr (prints by default)")
 
 	flag.Parse()
 
-	cfgFile = *cfgFileFlag
+	configDir = *configDirFlag
+	configFile = *cfgFileFlag
 	walletFile = *walletFileFlag
-	dir = *dirFlag
 	silent = *silentFlag
 }
 
-func MakeConfig() error {
-	fmt.Println("Started e2e testing")
-	return initConfig()
-}
+func InitClient() {
+	fmt.Println("Started InitClient...")
+	initSdk()
+	initWallet()
 
-func initConfig() error {
-	chainConfig := viper.New()
-
-	var configDir string
-
-	if dir != "" {
-		configDir = dir
-	} else {
-		configDir = getConfigDir()
-	}
-
-	chainConfig.AddConfigPath(configDir)
-
-	if len(cfgFile) > 0 {
-		chainConfig.SetConfigFile(configDir + "/" + cfgFile)
-	} else {
-		chainConfig.SetConfigFile(configDir + "/" + configFile)
-	}
-
-	if err := chainConfig.ReadInConfig(); err != nil {
-		ExitWithError("Can't read config:", err)
-	}
-
-	blockWorker := chainConfig.GetString("block_worker")
-	signScheme := chainConfig.GetString("server_chain.signature_scheme")
-	chainID := chainConfig.GetString("server_chain.id")
-	minSubmit = chainConfig.GetInt("server_chain.min_submit")
-	minCfm = chainConfig.GetInt("server_chain.min_confirmation")
-	cfmChainLength = chainConfig.GetInt("server_chain.confirmation_chain_length")
-
-	var walletFilePath string
-	if len(walletFile) > 0 {
-		walletFilePath = path.Join(configDir, walletFile)
-	} else {
-		walletFilePath = path.Join(configDir, "wallet.json")
-	}
-
-	zcncore.SetLogFile("cmdlog.log", !silent)
-
-	err := zcncore.InitZCNSDK(
-		blockWorker,
-		signScheme,
-		zcncore.WithChainID(chainID),
-		zcncore.WithMinSubmit(minSubmit),
-		zcncore.WithMinConfirmation(minCfm),
-		zcncore.WithConfirmationChainLength(cfmChainLength),
-	)
+	err := registerWallet()
 	if err != nil {
 		ExitWithError(err.Error())
 	}
+}
 
+func registerWallet() error {
+	wg := &sync.WaitGroup{}
+	statusBar := &ZCNStatus{wg: wg}
+	wg.Add(1)
+
+	_ = zcncore.RegisterToMiners(clientWallet, statusBar)
+	wg.Wait()
+
+	if statusBar.success {
+		fmt.Println("Wallet registered at miners: ")
+		fmt.Println("Wallet ClientID: " + clientWallet.ClientID)
+		fmt.Println("Wallet ClientKey: " + clientWallet.ClientKey)
+	} else {
+		PrintError("Wallet registration failed. " + statusBar.errMsg)
+		return errors.New(statusBar.errMsg)
+	}
+	return nil
+}
+
+func initWallet() {
+	fmt.Println("Started InitWallet...")
 	var fresh bool
 
 	if _, err := os.Stat(walletFilePath); os.IsNotExist(err) {
-		fmt.Println("No wallet in path ", walletFilePath, "found. Creating wallet...")
-		wg := &sync.WaitGroup{}
-		statusBar := &ZCNStatus{wg: wg}
-
-		wg.Add(1)
-		err = zcncore.CreateWallet(statusBar)
-		if err == nil {
-			wg.Wait()
-		} else {
-			ExitWithError(err.Error())
-		}
-
-		if len(statusBar.walletString) == 0 || !statusBar.success {
-			ExitWithError("Error creating the wallet." + statusBar.errMsg)
-		}
-		fmt.Println("ZCN wallet created!!")
-		clientConfig = statusBar.walletString
-		fmt.Println("Wallet string: " + clientConfig)
-		file, err := os.Create(walletFilePath)
-		if err != nil {
-			ExitWithError(err.Error())
-		}
-		defer func(file *os.File) {
-			_ = file.Close()
-		}(file)
-
-		_, _ = fmt.Fprint(file, clientConfig)
-
+		clientConfig = createWallet(walletFilePath)
 		fresh = true
 	} else {
-		f, err := os.Open(walletFilePath)
-		if err != nil {
-			ExitWithError("Error opening the wallet", err)
-		}
-		clientBytes, err := ioutil.ReadAll(f)
-		if err != nil {
-			ExitWithError("Error reading the wallet", err)
-		}
+		clientBytes := openWallet(walletFilePath)
 		clientConfig = string(clientBytes)
 	}
 
 	wallet := &zcncrypto.Wallet{}
-	err = json.Unmarshal([]byte(clientConfig), wallet)
+	err := json.Unmarshal([]byte(clientConfig), wallet)
 	clientWallet = wallet
 	if err != nil {
 		ExitWithError("Invalid wallet at path:" + walletFilePath)
@@ -169,29 +112,126 @@ func initConfig() error {
 		}
 		log.Printf("Read pool created successfully")
 	}
+}
 
-	wg = &sync.WaitGroup{}
-	statusBar := &ZCNStatus{wg: wg}
+func initSdk() {
+	fmt.Println("Started InitSDK...")
+	chainConfig := viper.New()
+	configDir := readChainConfig(chainConfig)
 
-	wg.Add(1)
-	_ = zcncore.RegisterToMiners(clientWallet, statusBar)
+	blockWorker := chainConfig.GetString("block_worker")
+	signScheme := chainConfig.GetString("server_chain.signature_scheme")
+	chainID := chainConfig.GetString("server_chain.id")
+	minSubmit = chainConfig.GetInt("server_chain.min_submit")
+	minCfm = chainConfig.GetInt("server_chain.min_confirmation")
+	cfmChainLength = chainConfig.GetInt("server_chain.confirmation_chain_length")
 
-	wg.Wait()
-	if statusBar.success {
-		fmt.Println("Wallet registered at miners: ")
-		fmt.Println("Wallet ClientID: " + clientWallet.ClientID)
-		fmt.Println("Wallet ClientKey: " + clientWallet.ClientKey)
+	if len(walletFile) > 0 {
+		walletFilePath = path.Join(configDir, walletFile)
 	} else {
-		PrintError("Wallet registration failed. " + statusBar.errMsg)
-		return errors.New(statusBar.errMsg)
+		walletFilePath = path.Join(configDir, "wallet.json")
 	}
 
-	return nil
+	zcncore.SetLogFile("cmdlog.log", !silent)
+
+	err := zcncore.InitZCNSDK(
+		blockWorker,
+		signScheme,
+		zcncore.WithChainID(chainID),
+		zcncore.WithMinSubmit(minSubmit),
+		zcncore.WithMinConfirmation(minCfm),
+		zcncore.WithConfirmationChainLength(cfmChainLength),
+	)
+	if err != nil {
+		ExitWithError(err.Error())
+	}
+}
+
+func openWallet(walletFilePath string) []byte {
+	f, err := os.Open(walletFilePath)
+	if err != nil {
+		ExitWithError("Error opening the wallet", err)
+	}
+	clientBytes, err := ioutil.ReadAll(f)
+	if err != nil {
+		ExitWithError("Error reading the wallet", err)
+	}
+	return clientBytes
+}
+
+func createWallet(walletFilePath string) string {
+	fmt.Println("No wallet in path ", walletFilePath, "found. Creating wallet...")
+
+	wg := &sync.WaitGroup{}
+	statusBar := &ZCNStatus{wg: wg}
+	wg.Add(1)
+
+	err := zcncore.CreateWallet(statusBar)
+	if err == nil {
+		wg.Wait()
+	} else {
+		ExitWithError(err.Error())
+	}
+
+	if len(statusBar.walletString) == 0 || !statusBar.success {
+		ExitWithError("Error creating the wallet." + statusBar.errMsg)
+	}
+
+	fmt.Println("ZCN wallet created!!")
+
+	walletString := statusBar.walletString
+
+	fmt.Println("Wallet string: " + walletString)
+	file := createWalletPath(walletFilePath, walletString)
+	_, _ = fmt.Fprint(file, walletString)
+
+	return walletString
+}
+
+func createWalletPath(walletFilePath string, content string) *os.File {
+	file, err := os.Create(walletFilePath)
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	if err != nil {
+		ExitWithError(err.Error())
+	}
+
+	_, err = file.Write([]byte(content))
+	if err != nil {
+		ExitWithError(err.Error())
+	}
+
+	return file
+}
+
+func readChainConfig(chainConfig *viper.Viper) string {
+	var configDirLocal string
+
+	if configDir != "" {
+		configDirLocal = configDir
+	} else {
+		configDirLocal = getConfigDir()
+	}
+
+	chainConfig.AddConfigPath(configDirLocal)
+
+	if len(configFile) > 0 {
+		chainConfig.SetConfigFile(path.Join(configDirLocal, configFile))
+	} else {
+		chainConfig.SetConfigFile(path.Join(configDirLocal, configFileName))
+	}
+
+	if err := chainConfig.ReadInConfig(); err != nil {
+		ExitWithError("Can't read config:", err)
+	}
+	return configDir
 }
 
 func getConfigDir() string {
-	if dir != "" {
-		return dir
+	if configDir != "" {
+		return configDir
 	}
 	var configDir string
 	home, err := homedir.Dir()

@@ -101,7 +101,7 @@ func (zcns *ZCNStatus) OnAuthorizeSendComplete(status int, toClienID string, val
 	fmt.Println("Signature:", signature)
 }
 
-//OnVoteComplete callback when a multisig vote is completed
+// OnVoteComplete callback when a multisig vote is completed
 func (zcns *ZCNStatus) OnVoteComplete(status int, proposal string, err string) {
 	defer zcns.wg.Done()
 	if status != zcncore.StatusSuccess {

@@ -9,9 +9,8 @@ import (
 )
 
 func main(){
-	if err := code.MakeConfig(); err != nil {
-		code.ExitWithError(err)
-	}
+	fmt.Println("Started e2e testing")
+	code.InitClient()
 
 	statusBar := code.NewZCNStatus()
 	txn, err := zcncore.NewTransaction(statusBar, 0)

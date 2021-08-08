@@ -4,9 +4,9 @@ logging:
   level: "info"
   console: true # printing log to console is only supported in development mode
 
-#block_worker: http://localhost:9091 # to debug locally
+block_worker: http://localhost:9091 # to debug locally
 #block_worker: http://198.18.0.98:9091 # to debug in container
-block_worker: https://zcnsc.0chain.net/dns/network # to debug in container
+#block_worker: https://zcnsc.0chain.net/dns # to debug in container
 
 handlers:
   rate_limit: 10 # 10 per second
