@@ -48,6 +48,7 @@ func init() {
 }
 
 func InitClient() {
+	fmt.Println("---------------------")
 	fmt.Println("Started InitClient...")
 	initSdk()
 	initWallet()
@@ -59,6 +60,7 @@ func InitClient() {
 }
 
 func registerWallet() error {
+	fmt.Println("---------------------------")
 	fmt.Println("Started Register wallets...")
 
 	statusBar := NewZCNStatus()
@@ -79,6 +81,7 @@ func registerWallet() error {
 }
 
 func initWallet() {
+	fmt.Println("---------------------")
 	fmt.Println("Started InitWallet...")
 	var fresh bool
 
@@ -112,6 +115,7 @@ func initWallet() {
 }
 
 func initSdk() {
+	fmt.Println("------------------")
 	fmt.Println("Started InitSDK...")
 	chainConfig := viper.New()
 	configDir := readChainConfig(chainConfig)

@@ -6,6 +6,7 @@ import (
 )
 
 func CheckBalance() {
+	fmt.Println("---------------------------")
 	fmt.Println("Started Checking balance...")
 	balance := NewZCNStatus()
 	balance.Begin()
