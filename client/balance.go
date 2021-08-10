@@ -5,7 +5,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func CheckBalance() {
+func CheckBalance() int64 {
 	fmt.Println("---------------------------")
 	fmt.Println("Started Checking balance...")
 	balance := NewZCNStatus()
@@ -14,7 +14,9 @@ func CheckBalance() {
 	if err == nil {
 		balance.Wait()
 		fmt.Printf("Client balance: %d", balance.balance)
+		return balance.balance
 	} else {
 		fmt.Println("Failed to get the balance: " + err.Error())
+		return -1
 	}
 }
