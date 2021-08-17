@@ -13,7 +13,7 @@ func CheckBalance() int64 {
 	err := zcncore.GetBalance(balance)
 	if err == nil {
 		balance.Wait()
-		fmt.Printf("Client balance: %d", balance.balance)
+		fmt.Printf("Client balance: %f\n", zcncore.ConvertToToken(balance.balance))
 		return balance.balance
 	} else {
 		fmt.Println("Failed to get the balance: " + err.Error())

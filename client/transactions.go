@@ -6,18 +6,6 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-const (
-	// ADDRESS ...
-	ADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
-	name    = "zcn"
-)
-
-func GetAuthorizers() {
-}
-
-func AddAuthorizer() {
-}
-
 func Burn(amount float64, nonce int64) zcncore.TransactionScheme {
 	fmt.Println("----------------------------------------------")
 	fmt.Println("Started executing smart contract ZCNSC:Burn...")
@@ -28,7 +16,9 @@ func Burn(amount float64, nonce int64) zcncore.TransactionScheme {
 	}
 
 	payload := BurnPayload{
+		TxnID:           "",
 		Nonce:           nonce,
+		Amount:          zcncore.ConvertToValue(amount),
 		EthereumAddress: "ABC",
 	}
 
@@ -38,8 +28,8 @@ func Burn(amount float64, nonce int64) zcncore.TransactionScheme {
 
 	status.Begin()
 	err = txn.ExecuteSmartContract(
-		ADDRESS,
-		"burn",
+		ZcnscAddress,
+		BurnMethod,
 		string(buffer),
 		zcncore.ConvertToValue(amount),
 	)

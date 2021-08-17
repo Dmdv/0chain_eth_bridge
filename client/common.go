@@ -62,7 +62,7 @@ func (zcns *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int) {
 }
 
 func (zcns *ZCNStatus) OnAuthComplete(t *zcncore.Transaction, status int) {
-	fmt.Println("Authorization complete on zauth.", status)
+	fmt.Printf("Authorization completed on zauth with status=%d, TRX=%s\n", status, t.GetTransactionHash())
 }
 
 func (zcns *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err string) {

@@ -8,23 +8,31 @@ import (
 
 func main() {
 	fmt.Println("Started e2e testing")
+
+	// Preparations
+
 	client.InitClient()
-	client.PourTokens(10)
 	client.CheckBalance()
+	client.PourTokens(100)
+	//client.PourTokens(100)
+	//client.PourTokens(100)
+	//client.PourTokens(100)
+	//client.PourTokens(100)
+	//client.CheckBalance()
+
+	// Burn-tokens case
+	// Description:
+	// 1. User burns token
+	// 2. Authorizer sends the client proof-of-Burn ticket
+	// 3. User gathers tickets from authorizers
+	//client.Burn(2, 4)
+	//client.CheckBalance()
 
 	// Add Authorizer
-	// Get list of authorizers
-
-	// Burn tokens case -> Check transaction
-	// 1. User burns token
-	// 2. Authorizer signs the burn ticket
-	// 3. User gets the ticket and sends to the wzcn to mint tokens
-
-	client.Burn(2, 2)
-	client.CheckBalance()
-
-	// TODO: compare balances
-	// TODO: Run multiple threads
+	// Description:
+	// Authorizer is being registered only with PublicKey.
+	// To check `AddAuthorizer` function we only need to call this function and verify transaction
+	client.RegisterAuthorizer("public key", "http://localhost:9999")
 
 	// Mint tokens -> Check transaction
 }
