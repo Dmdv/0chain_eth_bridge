@@ -14,6 +14,10 @@ func main() {
 	client.InitClient()
 	client.CheckBalance()
 	client.PourTokens(100)
+
+	client.TestStorageSc()
+	client.TestZcnscSc()
+
 	//client.PourTokens(100)
 	//client.PourTokens(100)
 	//client.PourTokens(100)
@@ -32,7 +36,7 @@ func main() {
 	// Description:
 	// Authorizer is being registered only with PublicKey.
 	// To check `AddAuthorizer` function we only need to call this function and verify transaction
-	client.RegisterAuthorizer("public key", "http://localhost:9999")
+	//client.RegisterAuthorizer("public key", "http://localhost:9999")
 
 	// Mint tokens -> Check transaction
 }
