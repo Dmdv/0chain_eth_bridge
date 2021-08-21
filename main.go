@@ -17,6 +17,7 @@ func main() {
 
 	client.TestStorageSc()
 	client.TestZcnscSc()
+	client.TestZcnscSc2()
 
 	//client.PourTokens(100)
 	//client.PourTokens(100)
