@@ -59,6 +59,21 @@ func InitClient() {
 	}
 }
 
+func InitNewClientClient(path string) {
+	fmt.Println("---------------------")
+	fmt.Println("Started InitNewClientClient...")
+
+	walletFilePath = path
+
+	initWallet()
+
+	err := registerWallet()
+	if err != nil {
+		ExitWithError(err.Error())
+	}
+}
+
+
 func registerWallet() error {
 	fmt.Println("---------------------------")
 	fmt.Println("Started Register wallets...")

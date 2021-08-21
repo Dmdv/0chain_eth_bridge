@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func RegisterAuthorizer(pk, url string) zcncore.TransactionScheme {
+func RegisterAuthorizer(url string) zcncore.TransactionScheme {
 	fmt.Println("---------------------------")
 	fmt.Println("Started Registering an authorizer...")
 	status := NewZCNStatus()
@@ -16,7 +16,7 @@ func RegisterAuthorizer(pk, url string) zcncore.TransactionScheme {
 	}
 
 	payload := &AuthorizerNode{
-		PublicKey: pk,
+		PublicKey: "public key",
 		URL:       url,
 	}
 

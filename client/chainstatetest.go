@@ -86,3 +86,27 @@ func TestZcnscSc2() zcncore.TransactionScheme {
 
 	return txn
 }
+
+func TestDeleteAuthorizer() zcncore.TransactionScheme {
+	fmt.Println("----------------------------------------------")
+	fmt.Println("Started executing smart contract TestDeleteAuthorizer...")
+	status := NewZCNStatus()
+	txn, err := zcncore.NewTransaction(status, 0)
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	status.Begin()
+	err = txn.ExecuteSmartContract(ZcnscAddress, "state_error_test_delete", "", zcncore.ConvertToValue(1))
+	if err != nil {
+		fmt.Printf("Transaction failed with error: '%s'", err.Error())
+		return nil
+	}
+
+	status.Wait()
+	fmt.Printf("Executed smart contract TestDeleteAuthorizer with TX = '%s'\n", txn.GetTransactionHash())
+
+	VerifyTransaction(txn, status)
+
+	return txn
+}
