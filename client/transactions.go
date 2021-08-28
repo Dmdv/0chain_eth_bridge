@@ -5,31 +5,26 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func PourTokens(amount float64) zcncore.TransactionScheme {
+func StartAndVerifyTransaction(contractName, methodName, address, payload string, mount float64) zcncore.TransactionScheme {
 	fmt.Println("----------------------------------------------")
-	fmt.Println("Started executing smart contract Faucet:Pour...")
+	fmt.Printf("Started executing smart contract %s:%s...\n", contractName, methodName)
 	status := NewZCNStatus()
 	txn, err := zcncore.NewTransaction(status, 0)
 	if err != nil {
 		ExitWithError(err)
 	}
 
-	status.Begin()
-	err = txn.ExecuteSmartContract(
-		zcncore.FaucetSmartContractAddress,
-		"pour",
-		"new wallet",
-		zcncore.ConvertToValue(amount),
-	)
+	fmt.Printf("Payload: %s", payload)
 
+	status.Begin()
+	err = txn.ExecuteSmartContract(address, methodName, payload, zcncore.ConvertToValue(mount))
 	if err != nil {
 		fmt.Printf("Transaction failed with error: '%s'", err.Error())
 		return nil
 	}
 
 	status.Wait()
-	fmt.Printf("Executed smart contract Faucet:Pour with TX = '%s'\n", txn.GetTransactionHash())
-
+	fmt.Printf("Executed smart contract %s:%s with TX = '%s'\n", contractName, methodName, txn.GetTransactionHash())
 	VerifyTransaction(txn, status)
 
 	return txn
@@ -47,6 +42,7 @@ func VerifyTransaction(txn zcncore.TransactionScheme, status *ZCNStatus) {
 	err := txn.Verify()
 	if err == nil {
 		status.Wait()
+
 		fmt.Printf("Verify output: '%s'\n", txn.GetVerifyOutput())
 		fmt.Println("Verification completed OK")
 	} else {

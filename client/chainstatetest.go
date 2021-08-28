@@ -6,6 +6,14 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+const (
+	StateErrorTest = "state_error_test"
+	StateErrorTest2 = "state_error_test2"
+	StateErrorTestDelete = "state_error_test_delete"
+)
+
+// Contains debugging method in different smart contracts
+
 func TestStorageSc() zcncore.TransactionScheme {
 	fmt.Println("----------------------------------------------")
 	fmt.Println("Started executing smart contract TestStorageSc...")
@@ -15,9 +23,9 @@ func TestStorageSc() zcncore.TransactionScheme {
 		ExitWithError(err)
 	}
 
-
 	status.Begin()
-	err = txn.ExecuteSmartContract(StorageAddress, "state_error_test", "", zcncore.ConvertToValue(1))
+
+	err = txn.ExecuteSmartContract(StorageAddress, StateErrorTest, "", zcncore.ConvertToValue(1))
 	if err != nil {
 		fmt.Printf("Transaction failed with error: '%s'", err.Error())
 		return nil
@@ -31,34 +39,9 @@ func TestStorageSc() zcncore.TransactionScheme {
 	return txn
 }
 
-func TestZcnscSc() zcncore.TransactionScheme {
+func TestZcnscScWithoutPayload() zcncore.TransactionScheme {
 	fmt.Println("----------------------------------------------")
-	fmt.Println("Started executing smart contract TestZcnscSc...")
-	status := NewZCNStatus()
-	txn, err := zcncore.NewTransaction(status, 0)
-	if err != nil {
-		ExitWithError(err)
-	}
-
-
-	status.Begin()
-	err = txn.ExecuteSmartContract(ZcnscAddress, "state_error_test", "", zcncore.ConvertToValue(1))
-	if err != nil {
-		fmt.Printf("Transaction failed with error: '%s'", err.Error())
-		return nil
-	}
-
-	status.Wait()
-	fmt.Printf("Executed smart contract TestZcnscSc with TX = '%s'\n", txn.GetTransactionHash())
-
-	VerifyTransaction(txn, status)
-
-	return txn
-}
-
-func TestZcnscSc2() zcncore.TransactionScheme {
-	fmt.Println("----------------------------------------------")
-	fmt.Println("Started executing smart contract TestZcnscSc2...")
+	fmt.Println("Started executing smart contract TestZcnscScWithoutPayload...")
 	status := NewZCNStatus()
 	txn, err := zcncore.NewTransaction(status, 0)
 	if err != nil {
@@ -73,14 +56,45 @@ func TestZcnscSc2() zcncore.TransactionScheme {
 	buffer, _ := json.Marshal(payload)
 
 	status.Begin()
-	err = txn.ExecuteSmartContract(ZcnscAddress, "state_error_test2", string(buffer), zcncore.ConvertToValue(1))
+	err = txn.ExecuteSmartContract(ZcnscAddress, StateErrorTest, string(buffer), zcncore.ConvertToValue(1))
 	if err != nil {
 		fmt.Printf("Transaction failed with error: '%s'", err.Error())
 		return nil
 	}
 
 	status.Wait()
-	fmt.Printf("Executed smart contract TestZcnscSc2 with TX = '%s'\n", txn.GetTransactionHash())
+	fmt.Printf("Executed smart contract TestZcnscScWithoutPayload with TX = '%s'\n", txn.GetTransactionHash())
+
+	VerifyTransaction(txn, status)
+
+	return txn
+}
+
+func TestZcnscScWithPayload() zcncore.TransactionScheme {
+	fmt.Println("----------------------------------------------")
+	fmt.Println("Started executing smart contract TestZcnscScWithPayload...")
+	status := NewZCNStatus()
+	txn, err := zcncore.NewTransaction(status, 0)
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	payload := &AuthorizerNode{
+		PublicKey: "PublicKey",
+		URL:       "localhost",
+	}
+
+	buffer, _ := json.Marshal(payload)
+
+	status.Begin()
+	err = txn.ExecuteSmartContract(ZcnscAddress, StateErrorTest2, string(buffer), zcncore.ConvertToValue(1))
+	if err != nil {
+		fmt.Printf("Transaction failed with error: '%s'", err.Error())
+		return nil
+	}
+
+	status.Wait()
+	fmt.Printf("Executed smart contract TestZcnscScWithPayload with TX = '%s'\n", txn.GetTransactionHash())
 
 	VerifyTransaction(txn, status)
 
@@ -97,7 +111,7 @@ func TestDeleteAuthorizer() zcncore.TransactionScheme {
 	}
 
 	status.Begin()
-	err = txn.ExecuteSmartContract(ZcnscAddress, "state_error_test_delete", "", zcncore.ConvertToValue(1))
+	err = txn.ExecuteSmartContract(ZcnscAddress, StateErrorTestDelete, "", zcncore.ConvertToValue(1))
 	if err != nil {
 		fmt.Printf("Transaction failed with error: '%s'", err.Error())
 		return nil
