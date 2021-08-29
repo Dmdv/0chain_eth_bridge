@@ -6,7 +6,7 @@ import (
 )
 
 // ToWzcn converts from ZCN to WZNC
-// Description:
+// Flow:
 // 1. User burns token
 // 2. Authorizer sends the client proof-of-Burn ticket
 // 3. User gathers tickets from authorizers
