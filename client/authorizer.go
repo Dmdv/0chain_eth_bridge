@@ -17,7 +17,7 @@ func SendTicketsToEthereumBridge() {
 	fmt.Println("Sending tickets to Ethereum bridge")
 }
 
-func GetBurnProofTickets(authorizers []string) {
+func GetBurnProofTickets(authorizers []string, hash string) {
 	// Create a Resty Client
 	httpClient := resty.New()
 	httpClient.SetTimeout(time.Second * 3)
@@ -31,7 +31,7 @@ func GetBurnProofTickets(authorizers []string) {
 	for _, url := range authorizers {
 		wg.Add(1)
 		authUrl := url + burnTicketPath
-		go getTicketFromAuthorizer(authUrl, ch, httpClient.R(), &wg)
+		go getTicketFromAuthorizer(hash, authUrl, ch, httpClient.R(), &wg)
 	}
 
 	go func(done chan<- bool) {
@@ -49,11 +49,15 @@ func GetBurnProofTickets(authorizers []string) {
 	fmt.Printf("Received %d tickets from authorizers", len(tickets))
 }
 
-func getTicketFromAuthorizer(url string, ch chan *ProofOfBurn, rest *resty.Request, wg *sync.WaitGroup) {
+func getTicketFromAuthorizer(hash string, url string, ch chan *ProofOfBurn, rest *resty.Request, wg *sync.WaitGroup) {
 	defer wg.Done()
 	proof := &ProofOfBurn{}
 
-	resp, err := rest.Get(url)
+	resp, err := rest.
+		SetFormData(map[string]string{
+			"hash": hash,
+		}).
+		Post(url)
 
 	if err == nil {
 		body := resp.Body()

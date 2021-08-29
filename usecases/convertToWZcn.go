@@ -12,11 +12,11 @@ import (
 // 3. User gathers tickets from authorizers
 // 4. User sends tickets to ETH bridge
 func ToWzcn(amount float64, nonce int64) {
-	client.Burn(amount, nonce)
+	transaction := client.Burn(amount, nonce)
 	client.CheckBalance()
 
 	authorizersFromChain := authorizers.GetAuthorizersFromChain()
 
-	client.GetBurnProofTickets(authorizersFromChain)
+	client.GetBurnProofTickets(authorizersFromChain, transaction.GetTransactionHash())
 	client.SendTicketsToEthereumBridge()
 }
