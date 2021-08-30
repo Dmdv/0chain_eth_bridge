@@ -7,7 +7,7 @@ import (
 
 func Burn(amount float64, nonce int64) zcncore.TransactionScheme {
 	payload := BurnPayload {
-		TxnID:           "",
+		TxnID:           "", // Filled in the SC
 		Nonce:           nonce,
 		Amount:          zcncore.ConvertToValue(amount),
 		EthereumAddress: "ABC",
@@ -17,7 +17,7 @@ func Burn(amount float64, nonce int64) zcncore.TransactionScheme {
 
 	return StartAndVerifyTransaction(
 		"ZCNSC",
-		"BurnMethod",
+		"burn",
 		ZcnscAddress,
 		string(buffer),
 		amount,
